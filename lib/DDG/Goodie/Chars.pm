@@ -5,37 +5,27 @@ use strict;
 use DDG::Goodie;
 use Text::Trim;
 
-triggers startend =>
-    'chars',
+triggers start =>
     'number of characters',
     'number of chars',
     'num chars',
     'num characters',
     'char count',
     'character count',
-    'characters count',
-    'length of string',
     'length in characters',
     'length in chars';
 
 zci answer_type => "chars";
 zci is_cached   => 1;
 
-name 'Character Counter';
-description 'Count the number of charaters in a query';
-primary_example_queries 'chars in "my string"';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/Chars.pm';
-category 'computing_tools';
-topics 'programming';
-
 handle remainder => sub {
     my ($str) = @_;
     return if !$str;
 
-    # remove leading word 'in',
-    # e.g. 'chars in mississippi' would just count the string 'mississippi'.
-    $str =~ s/^\s*in\b//;
-
+    # remove leading words 'in' and 'of,
+    # e.g. 'number of characters in mississippi' would just count the string 'mississippi'.
+    $str =~ s/^\s*(in|of)\b//;
+    
     # trim spaces at beg and end of string
     $str = trim $str;
 
@@ -54,14 +44,15 @@ handle remainder => sub {
     # note that this works for length=0, i.e. we'll correctly get '0 characters'.
     my $characters_pluralized = ($len == 1 ? 'character' : 'characters');
 
-    # build the output string
-    my $text_out = qq("$str" is $len $characters_pluralized long.);
-
-    return $text_out,
+    return qq("$str" is $len $characters_pluralized long.),
       structured_answer => {
-        input     => [html_enc($str)],
-        operation => 'Character count',
-        result    => $len
+        data => {
+            title    => $len,
+            subtitle => "Character count: $str"
+        },
+        templates => {
+            group => 'text'
+        }
       };
 };
 

@@ -7,19 +7,11 @@ use strict;
 zci answer_type => "magic_eight_ball";
 zci is_cached   => 0;
 
-name "MagicEightBall";
-description "provides a random answer just like a magic eight ball";
-primary_example_queries "magic eight ball is it going to rain today", "magic 8 ball should I wear red today?";
-secondary_example_queries "magic eight-ball are you actually helpful";
-category "random";
-topics "trivia";
-code_url "https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/MagicEightBall.pm";
-attribution github => ["jlbaez", "Jose Baez"];
-
 triggers start => "magic eight ball", "magic 8 ball", "magic eight-ball", "magic 8-ball", "magic 8ball";
 
 #These are the standard responses found in a magic eight ball
-my @eightBallresponses = ("It is certain",
+my @eightBallresponses = (
+    "It is certain",
     "It is decidedly so",
     "Without a doubt",
     "Yes, definitely",
@@ -48,12 +40,15 @@ handle remainder => sub {
     srand();
     my $response = $eightBallresponses[int rand scalar @eightBallresponses];
 
-    return $response,
-        structured_answer => {
-            input => [html_enc($_)],
-            operation => "Magic eight ball's answer to",
-            result => html_enc($response),
-        };
+    return $response, structured_answer => {
+        data => {
+            title => $response,
+            subtitle => "Magic eight ball's answer to: $_"
+        },
+        templates => {
+            group => 'text'
+        }
+    };
 };
 
 1;

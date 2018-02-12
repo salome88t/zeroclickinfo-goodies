@@ -4,23 +4,10 @@ package DDG::Goodie::MakeMeASandwich;
 use strict;
 use DDG::Goodie;
 
-name 'Make Me A Sandwich';
-source 'http://xkcd.com/149/';
-description 'Responds in accordance with xkcd #149';
-primary_example_queries 'make me a sandwich', 'sudo make me a sandwich';
-category 'special';
-topics 'geek';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/MakeMeASandwich.pm';
-attribution twitter => ['mattr555', 'Matt Ramina'],
-            github => ['mattr555', 'Matt Ramina'];
-
 triggers end => 'make me a sandwich';
 
 zci answer_type => 'xkcd_sandwich';
 zci is_cached   => 1;
-
-my $xkcd_query = 'https://duckduckgo.com/?q=' . uri_esc('xkcd 149');
-my $operation  = '<a href="' . $xkcd_query . '">xkcd 149</a>';
 
 handle remainder => sub {
 
@@ -36,12 +23,18 @@ handle remainder => sub {
 
     return unless defined $result;
 
-    return $result,
-      structured_answer => {
-        input     => [$input],
-        operation => $operation,
-        result    => $result
-      };
+    return $result, structured_answer => {
+        data => {
+            title => $result,
+            subtitle => [
+                $input,
+                { text => "XKCD 149", href => "https://duckduckgo.com/?q=xkcd%20149" }
+            ]
+        },
+        templates => {
+            group => 'text'
+        }
+    };
 };
 
 1;

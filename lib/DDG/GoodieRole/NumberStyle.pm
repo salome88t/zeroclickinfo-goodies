@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Moo;
+use Math::BigFloat;
 
 has [qw(id decimal thousands)] => (
     is => 'ro',
@@ -23,7 +24,7 @@ sub _build_number_regex {
     my $self = shift;
     my ($decimal, $thousands, $exponential) = ($self->decimal, $self->thousands, $self->exponential);
 
-    return qr/-?[\d_ \Q$decimal\E\Q$thousands\E]+(?:\Q$exponential\E-?\d+)?/;
+    return qr/-?[\d_ \Q$decimal\E\Q$thousands\E]+(?:\Q$exponential\E-?\d+)?/i;
 }
 
 sub understands {
@@ -69,7 +70,7 @@ sub for_computation {
     $number_text =~ s/\Q$decimal\E/./g;     # Make sure decimal mark is something perl knows how to use.
     if ($number_text =~ s/^([\d$decimal$thousands]+)\Q$exponential\E(-?[\d$decimal$thousands]+)$/$1e$2/ig) {
         # Convert to perl style exponentials and then make into human-style floats.
-        $number_text = sprintf('%f', $number_text);
+        $number_text = Math::BigFloat->new($number_text)->bstr();
     }
 
     return $number_text;

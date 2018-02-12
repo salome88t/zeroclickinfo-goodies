@@ -6,20 +6,10 @@ use DDG::Goodie;
 use Net::Domain::TLD;
 use Email::Valid;
 
-primary_example_queries 'validate foo@example.com';
-description 'Checks given email address.';
-name 'Email';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/EmailValidator.pm';
-topics 'sysadmin';
-category 'computing_info';
-
 zci answer_type => 'email_validation';
 zci is_cached   => 1;
 
 triggers start => 'validate', 'validate my email', 'validate my e-mail';
-
-attribution github  => ['https://github.com/stelim', 'Stefan Limbacher'],
-            twitter => ['http://twitter.com/stefanlimbacher', 'Stefan Limbacher'];
 
 my $message_part = {
     tldcheck         => 'top-level domain',
@@ -46,18 +36,21 @@ handle remainder => sub {
     my $message;
     if (!$result) {
         if (defined $message_part->{$email_valid->details}) {
-            $message = "$address is invalid. Please check the " . $message_part->{$email_valid->details} . ".";
+            $message = "$address is invalid. Please check the $message_part->{$email_valid->details}.";
         }
-        $message ||= 'E-mail address $address is invalid.';
+        $message ||= "E-mail address $address is invalid.";
     } else {
         $message = "$address appears to be valid.";
     }
 
-    return $message,
-      structured_answer => {
-        input     => [html_enc($address)],
-        operation => 'Email address validation',
-        result    => html_enc($message),
+    return $message, structured_answer => {
+        data => {
+            title => $message,
+            subtitle => "Email address validation: $address"
+        },
+        templates => {
+            group => 'text'
+        }
       };
 };
 

@@ -16,17 +16,6 @@ triggers start => 'sort';
 zci answer_type => 'sort';
 zci is_cached   => 1;
 
-primary_example_queries 'sort -3 -10 56 10';
-secondary_example_queries 'sort descending 10, -1, +5.3, -95, 1';
-description 'Return the given numbers list in a sorted order.';
-name 'Sort';
-code_url 'http://github.com/koosha--';
-category 'computing_tools';
-topics 'programming';
-attribution github  => ['koosha--', 'Koosha K. M.'],
-            twitter => '_koosha_',
-            github => ["https://github.com/Mailkov", "Melchiorre Alastra"];
-
 my $delim = ', ';
 
 handle remainder => sub {
@@ -45,21 +34,25 @@ handle remainder => sub {
 
     my @numbers = split /[\s,;]+/, $input;
 
+    return unless @numbers > 1;
     return unless all { looks_like_number($_) } @numbers;
 
     my $count = 0;
-    @numbers = map { 0 + $_ } grep { ++$count <= MAX_LIST_SIZE } @numbers;    # Normalize and limit list size.
+    @numbers = map { 0 + $_ } grep { ++$count <= MAX_LIST_SIZE } @numbers; # Normalize and limit list size.
 
     my $unsorted_list = join($delim, @numbers);
     my $sorted_list = join($delim, sort { $ascending ? $a <=> $b : $b <=> $a } @numbers);
     my $dir = $ascending ? 'ascendingly' : 'descendingly';
 
-    return "$sorted_list (Sorted $dir)",
-      structured_answer => {
-        input     => [$unsorted_list],
-        operation => 'Sort ' . $dir,
-        result    => $sorted_list
-      };
+    return "$sorted_list (Sorted $dir)", structured_answer => {
+        data => {
+            title => "$sorted_list",
+            subtitle => "Sort $dir: $unsorted_list"
+        },
+        templates => {
+            group => 'text'
+        }
+    };
 };
 
 1;

@@ -27,13 +27,19 @@ subtest 'NumberStyler' => sub {
             [['4,431',     '4,32', '5,42']       => 'euro'],
             [['4,431',     '4.32', '5.42']       => 'perl'],
             [['4_431_123', '4 32', '99.999 999'] => 'perl'],
+            [['4e1', '-1e25', '4.5e-25'] => 'perl'],
+            [['-1,1e25', '4,5e-25'] => 'euro'],
+            [['4E1', '-1E25', '4.5E-25'] => 'perl'],
+            [['-1,1E25', '4,5E-25'] => 'euro'],
         );
 
+        my $number_style_regex = NumberRoleTester::number_style_regex();
         foreach my $tc (@valid_test_cases) {
             my @numbers           = @{$tc->[0]};
             my $expected_style_id = $tc->[1];
             is(NumberRoleTester::number_style_for(@numbers)->id,
                 $expected_style_id, '"' . join(' ', @numbers) . '" yields a style of ' . $expected_style_id);
+            like($_, qr/^$number_style_regex$/, "$_ matches the number_style_regex") for(@numbers);
         }
     };
 
@@ -89,11 +95,20 @@ subtest 'Dates' => sub {
             # RFC850
             '08-Feb-94 14:15:29 GMT' => 760716929,
             # date(1) default
+            'Sun Sep  7 15:57:56 EST 2014' => 1410123476,
             'Sun Sep  7 15:57:56 EDT 2014' => 1410119876,
             'Sun Sep 14 15:57:56 UTC 2014' => 1410710276,
+            'Sun Sep 7 20:11:44 CET 2014'  => 1410117104,
             'Sun Sep 7 20:11:44 BST 2014'  => 1410117104,
             # RFC 2822
             'Sat, 13 Mar 2010 11:29:05 -0800' => 1268508545,
+            # HTTP (without day) - any TZ
+            # %d %b %Y %H:%M:%S %Z
+            '01 Jan 2012 00:01:20 UTC' => 1325376080,
+            '22 Jun 1998 00:00:02 GMT' => 898473602,
+            '07 Sep 2014 20:11:44 CET' => 1410117104,
+            '07 Sep 2014 20:11:44 cet' => 1410117104,
+            '09 Aug 2014 18:20:00'     => 1407608400,
             #Undefined/Natural formats:
             '13/12/2011'        => 1323734400,     #DMY
             '01/01/2001'        => 978307200,      #Ambiguous, but valid
@@ -123,6 +138,10 @@ subtest 'Dates' => sub {
             '29 feb, 2012'      => 1330473600,
             '2038-01-20'        => 2147558400,     # 32-bit signed int UNIX epoch ends 2038-01-19
             '1780-01-20'        => -5994172800,    # Way before 32-bit signed int epoch
+            '5th of january 1993' => 726192000,
+            '5 of jan 1993'     => 726192000,
+            'june the 1st 2012' => 1338508800,
+            "11 march 2000 00:00:00" => 952732800
         );
 
         foreach my $test_date (sort keys %dates_to_match) {
@@ -234,9 +253,9 @@ subtest 'Dates' => sub {
 
         restore_time();
     };
-    
+
     subtest 'Relative naked months' => sub {
-        
+
         my %time_strings = (
             "2015-01-13T00:00:00Z" => {
                 src    => ['january', 'february'],
@@ -254,16 +273,16 @@ subtest 'Dates' => sub {
                 src    => ['january', 'february'],
                 output => ['2015-01-01T00:00:00',  '2015-02-01T00:00:00'],
             },
-            
+
         );
-        
+
         foreach my $query_time (sort keys %time_strings) {
             set_fixed_time($query_time);
-            
+
             my @source = @{$time_strings{$query_time}{src}};
             my @expectation = @{$time_strings{$query_time}{output}};
             my @result = DatesRoleTester::parse_all_datestrings_to_date(@source);
-            
+
             is_deeply(\@result, \@expectation);
         }
     };
@@ -319,6 +338,20 @@ subtest 'Dates' => sub {
         foreach my $result (sort keys %date_strings) {
             foreach my $test_string (@{$date_strings{$result}}) {
                 is(DatesRoleTester::date_output_string($test_string), $result, $test_string . ' normalizes for output as ' . $result);
+            }
+        }
+    };
+    subtest 'Valid clock string format' => sub {
+        my %date_strings = (
+            '01 Jan 2012 00:01:20 UTC'   => ['01 Jan 2012 00:01:20 UTC', '01 Jan 2012 00:01:20 utc'],
+            '22 Jun 1998 00:00:02 UTC'   => ['22 Jun 1998 00:00:02 GMT'],
+            '07 Sep 2014 20:11:44 EST'   => ['07 Sep 2014 20:11:44 EST'],
+            '07 Sep 2014 20:11:44 -0400' => ['07 Sep 2014 20:11:44 EDT'],
+            '09 Aug 2014 18:20:00 UTC'   => ['09 Aug 2014 18:20:00'],
+        );
+        foreach my $result (sort keys %date_strings) {
+            foreach my $test_string (@{$date_strings{$result}}) {
+                is(DatesRoleTester::date_output_string($test_string, 1), $result, $test_string . ' normalizes for output as ' . $result);
             }
         }
     };
@@ -443,9 +476,14 @@ subtest 'Dates' => sub {
             'jun 21'                    => 961545600,
             'next january'              => 978307200,
             'december'                  => 975628800,
+            '22 may 2000 08:00:00'      => 958982400,
+            '22 may 08:00:00'           => 958982400,
+            '22 may 08:00'              => 958982400,
+            '08:00 22 may'              => 958982400,
         );
 
         foreach my $test_mixed_date (sort keys %mixed_dates_to_test) {
+            like($test_mixed_date, qr/^$test_datestring_regex$/, "$test_mixed_date matches the datestring_regex");
             my $parsed_date_object = DatesRoleTester::parse_datestring_to_date($test_mixed_date);
             isa_ok($parsed_date_object, 'DateTime', $test_mixed_date);
             is($parsed_date_object->epoch, $mixed_dates_to_test{$test_mixed_date}, ' ... represents the correct time.');

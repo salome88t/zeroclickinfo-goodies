@@ -10,17 +10,6 @@ zci answer_type => 'jira';
 
 use YAML::XS 'LoadFile';
 
-primary_example_queries 'SOLR-4530';
-secondary_example_queries 'IdentityHtmlMapper solr-4530';
-description 'Track Apache and Codehaus JIRA bug tickets';
-name 'Jira';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/Jira.pm';
-category 'programming';
-topics 'programming';
-attribution
-  github  => ['https://github.com/arroway',       'Stéphanie Ouillon'],
-  twitter => ['http://twitter.com/steph_ouillon', 'Stéphanie Ouillon'];
-
 my $projects = LoadFile(share('projects.yml'));
 
 my @all_project_keys = sort keys %$projects;
@@ -40,30 +29,29 @@ handle query => sub {
     my $ticket_number = $+{ticket_number};
     my $ticket_id     = $ticket_key . '-' . $ticket_number;
 
-    my $html_return = '';
-
+    my $return_value = {};
     foreach my $project_key (@all_project_keys) {
         my $this_project = $projects->{$project_key};
         if (my $ticket_project = $this_project->{ticket_keys}{$ticket_key}) {
-            $html_return .= '<br>' if ($html_return);    # We're not first, add a line.
-            $html_return .=
-                $ticket_project . ' ('
-              . $this_project->{description}
-              . '): see ticket <a href="'
-              . $this_project->{browse_url}
-              . $ticket_id . '">'
-              . $ticket_id . '</a>.';
+            $return_value->{description} = $this_project->{description};
+            $return_value->{url} = $this_project->{browse_url};
+            $return_value->{id} = $ticket_id;
+            $return_value->{project} = $ticket_project;
         }
     }
 
-    return unless $html_return;
+    return unless $return_value;
 
-    return undef,
-      structured_answer => {
-        input     => [$ticket_id],
-        operation => "JIRA ticket lookup",
-        result    => $html_return
-      };
+    return undef, structured_answer => {
+        data => {
+            title => "$return_value->{project} ($return_value->{description})",
+            subtitle => "JIRA Ticket Lookup: $return_value->{id}",
+            url => "$return_value->{url}$return_value->{id}",
+        },
+        templates => {
+            group => 'info'
+        }
+    };
 };
 
 1;

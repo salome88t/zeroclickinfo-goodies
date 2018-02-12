@@ -1,24 +1,15 @@
 package DDG::Goodie::SolarSystem;
-# ABSTRACT: Return various attributes of a object
+# ABSTRACT: Return various attributes of an object
 
 use DDG::Goodie;
 use YAML::XS 'LoadFile';
 use POSIX;
 use Text::Trim;
+use utf8;
 use strict;
 
 zci answer_type => "solarsystem";
 zci is_cached   => 1;
-
-name "SolarSystem";
-primary_example_queries 'size of venus';
-secondary_example_queries 'what is the size of venus', 'volume of venus';
-description 'Lookup various object attributes';
-code_url "https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/objects.pm";
-category 'random';
-topics 'special_interest';
-attribution github => ["MrChrisW", "Chris Wilson"],
-            web => ["http://chrisjwilson.com", "Chris Wilson"];
 
 # Get Goodie version for use with image paths
 my $goodieVersion = $DDG::GoodieBundle::OpenSourceDuckDuckGo::VERSION // 999;
@@ -85,15 +76,17 @@ handle query_lc => sub {
     # Superscript for km3, mi3, km2 or mi2 
     if($result =~ m/(km|mi)(\d)/) {
         my ($symbol, $superscript) = ($1, $2);
-        $result =~ s/$symbol$superscript/$symbol<sup>$superscript<\/sup>/;
+        my $unisuper = unicode_superscript($superscript);
+        $result =~ s/$symbol$superscript/$symbol$unisuper/;
     }
     
     # Superscript for scientific notation
-    # Convert x to HTML entity &times;
+    # Convert x to unicode
     if($result =~ m/x\s(10)(\d\d)/) {
         my ($number, $exponent) = ($1, $2);
-        $result =~ s/$number$exponent/$number<sup>$exponent<\/sup>/;
-        $result =~ s/x/&times;/;
+        my $uniexp = unicode_superscript($exponent);
+        $result =~ s/$number$exponent/$number$uniexp/;
+        $result =~ s/x/×/;
     }
 
     #$saturn var is provided to handlebars template to set size of image
@@ -102,8 +95,6 @@ handle query_lc => sub {
     #Return result and html
     return $operation." is ".$result,
     structured_answer => {
-        id => 'solar_system',
-        name => 'Answer',
         data => {
             attributes => $result,
             operation => $operation,
@@ -124,4 +115,6 @@ handle query_lc => sub {
         }
     };
 };
+
+sub unicode_superscript { return $_[0] =~ tr/0123456789/⁰ⁱ²³⁴⁵⁶⁷⁸⁹/r }
 1;

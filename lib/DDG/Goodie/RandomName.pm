@@ -3,31 +3,30 @@ package DDG::Goodie::RandomName;
 
 use strict;
 use DDG::Goodie;
-
 use Data::RandomPerson;
-
-name 'RandomName';
-description 'returns a random and fictive title, first- and lastname and day of birth';
-category 'random';
-topics 'words_and_games';
-primary_example_queries 'random name';
-secondary_example_queries 'random person';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/RandomName.pm';
-attribution github  => ['stelim', 'Stefan Limbacher'],
-            twitter => ['stefanlimbacher', 'Stefan Limbacher'];
 
 triggers start  => 'random name','random person';
 zci answer_type => "randomname";
 zci is_cached   => 0;
 
 handle query => sub {
+    my $query = $_;
     my $person = Data::RandomPerson->new()->create();
     my $name = "$person->{firstname} $person->{lastname}";
-    my %genders = (m => 'Male', f => 'Female');
-    return "Name: $name\nGender: $genders{$person->{gender}}\nDate of birth: $person->{dob}\nAge: $person->{age}",
-           heading => "Random Person" if /person/i;
-    return "$name (random)";
+    my $string_answer;
+    my $structured_answer = {};
+    $structured_answer->{templates}->{group} = 'icon';
+    $structured_answer->{data}->{title} = $name;
+    $structured_answer->{data}->{altSubtitle} = 'Randomly generated name';
+    if ($query =~ /person/i) {
+        my %genders = (m => 'Male', f => 'Female');
+        $string_answer = "Name: $name\nGender: $genders{$person->{gender}}\nDate of birth: $person->{dob}\nAge: $person->{age}";
+        $structured_answer->{data}->{subtitle} = 'Birthday: ' . $person->{dob} . ' | Age: ' . $person->{age};
+        $structured_answer->{data}->{altSubtitle} = 'Randomly generated person';
+    } else {
+        $string_answer = "Name: $name";
+    }
+    return $string_answer, structured_answer => $structured_answer;
 };
-
 
 1;

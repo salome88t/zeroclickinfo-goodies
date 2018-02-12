@@ -3,7 +3,6 @@ package DDG::Goodie::SumOfNaturalNumbers;
 
 use strict;
 use DDG::Goodie;
-use bignum;
 
 triggers start => "add", "sum from";
 triggers startend => "sum";
@@ -11,15 +10,7 @@ triggers startend => "sum";
 zci is_cached => 1;
 zci answer_type => "sum";
 
-primary_example_queries 'sum 1 to 10';
-secondary_example_queries 'add 33 to 100';
-description 'Add up the numbers between two values';
-name 'SumOfNaturalNumbers';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/SumOfNaturalNumbers.pm';
-category 'calculations';
-topics 'math';
-attribution github => ['JulianGindi', 'Julian Gindi'],
-            github => ['navneet35371', 'Navneet Suman'];
+use bignum;
 
 # This adds commas to the number.
 # It converts 10000000 to 10,000,000.
@@ -36,11 +27,19 @@ handle remainder => sub {
     # Check if we're getting integers.
     return unless $_ =~ /^(?:from )?(\d+)\s*(to|-)\s*(\d+)$/i;
 
-    if ($1 > $3) {
-	return;
-    } else {
-	my $sum = ((($3 * ($3 + 1)) / 2)-(($1 * ($1 - 1)) / 2));
-	return 'Sum of natural numbers from ' . commify($1) . ' to ' . commify($3) . ' is ' . commify($sum) . '.';
+    return if ($1 > $3);
+
+    my $sum = commify((($3 * ($3 + 1)) / 2)-(($1 * ($1 - 1)) / 2));
+    my ($from_number, $to_number) = map { commify($_) } ($1, $3);
+    my $string_answer = 'Sum of natural numbers from ' . $from_number . ' to ' . $to_number;
+    return $string_answer, structured_answer => {
+        data => {
+            title => "$sum",
+            subtitle => $string_answer
+        },
+        templates => {
+            group => 'text'
+        }
     }
 };
 

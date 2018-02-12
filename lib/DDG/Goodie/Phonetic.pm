@@ -8,15 +8,6 @@ triggers start => 'phonetic';
 
 zci is_cached => 1;
 
-primary_example_queries 'phonetic what duck';
-description 'spell a string phonetically with the NATO alphabet';
-name 'Phonetic';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/Phonetic.pm';
-category 'reference';
-topics 'special_interest';
-attribution github    => [ 'robotmay', 'Robert May' ],
-            twitter => [ 'robotmay', 'Robert May' ];
-
 sub components {
     my %nato = (
       a => "Alfa",
@@ -66,7 +57,18 @@ handle remainder => sub {
     $_ = lc;
     my @words = split(/\s+/, $_);
     my @phonetics = map { components($_) } @words;
-    return "Phonetic: " . join(" ", @phonetics);
+    my $string_answer = "Phonetic: " . join(" ", @phonetics);
+    my $title = join(" ", @phonetics);
+    my $subtitle = "Phonetic: " . $_;
+    return $string_answer, structured_answer => {
+        data => {
+            title => $title,
+            subtitle => $subtitle,
+        },
+        templates => {
+            group => 'text',
+        }
+    }
 };
 
 1;

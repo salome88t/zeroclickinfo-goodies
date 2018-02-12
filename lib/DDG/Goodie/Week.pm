@@ -11,18 +11,6 @@ use Lingua::EN::Numbers::Ordinate qw/ordinate ordsuf/;
 use DateTime;
 use Date::Calc qw(:all);
 
-# File metadata
-primary_example_queries "what is the current week";
-secondary_example_queries "what was the 5th week of this year",
-                          "what was the 5th week of 1944";
-description "find the current week number or when a week began";
-name "Week";
-code_url "https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/Week.pm";
-category "dates";
-topics "everyday", "special_interest";
-attribution twitter => ["garrettsquire", 'Garrett Squire'],
-            github => ["gsquire", 'Garrett Squire'];
-
 triggers any => 'week';
 
 zci is_cached => 1;
@@ -75,7 +63,7 @@ handle query_lc => sub {
     # Asking about current week of the current year
     if ($week eq 'current' and $year eq 'current') {
         my ($dt_week_num, $dt_year) = (ordinate($dt->week_number), $dt->year);
-        $response = "We are currently in the $dt_week_num week of $dt_year.";
+        $response = "We are currently in the $dt_week_num week of $dt_year";
     }
     # Asking about nth week of the current year
     elsif ($year eq 'current') {
@@ -90,15 +78,18 @@ handle query_lc => sub {
 
         $start_term = "began" if ($year < $dt->year || $year == $dt->year && ($week< $dt->week && $day < $dt->day));
 
-        $response = "The $week_num week of $year $start_term on $out_month $day_num.";
+        $response = "The $week_num week of $year $start_term on $out_month $day_num";
     }
 
-    return $response,
-      structured_answer => {
-        input     => [],
-        operation => "Assuming the week starts on Monday",
-        result    => $response
-      };
+    return $response, structured_answer => {
+        data => {
+            title => $response,
+            subtitle => "Assuming the week starts on Monday"
+        },
+        templates => {
+            group => 'text'
+        }
+    };
 };
 
 1;

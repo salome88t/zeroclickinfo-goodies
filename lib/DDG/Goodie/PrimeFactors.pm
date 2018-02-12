@@ -6,11 +6,12 @@ use DDG::Goodie;
 
 use Math::Prime::Util 'factor_exp', 'is_prime';
 
-use bignum;
 use utf8;
 
 zci answer_type => "prime_factors";
 zci is_cached => 1;
+
+use bignum;
 
 triggers startend => (
     'prime factors',
@@ -20,22 +21,20 @@ triggers startend => (
     'prime factorization',
     'prime factorization of',
     'factorize',
-    'prime factorize',
+    'prime factorize'
 );
 
-primary_example_queries 'prime factors of 30';
-secondary_example_queries '72 prime factors', 'factorize 128';
-description 'Returns the prime factors of the entered number';
-name 'PrimeFactors';
-topics 'math';
-category 'calculations';
-attribution github => [ 'austinheimark', 'Austin Heimark' ],
-            github => ['https://github.com/Sloff', 'Sloff'];
+triggers end => (
+    'prime',
+    'a prime',
+    'prime number',
+    'a prime number'
+);
 
 sub convert_to_superscripts (_) {
     my $string = $_[0];
     $string =~ tr[+−=()0123456789]
-                [⁺⁻⁼⁽⁾⁰¹²³⁴⁵⁶⁷⁸⁹ⵯ];
+                [⁺⁻⁼⁽⁾⁰¹²³⁴⁵⁶⁷⁸⁹];
     return $string;
 }
 
@@ -82,11 +81,9 @@ sub commify {
 # Structured answer that will be returned
 sub format_answer {
     my ($plaintext, $title, $subtitle) = @_;
-    
+
     return $plaintext,
     structured_answer => {
-        id => 'prime_factors',
-        name => 'Answer',
         data => {
             title => $title || $plaintext,
             subtitle => $subtitle
@@ -98,18 +95,15 @@ sub format_answer {
 }
 
 handle remainder => sub {
-    # Exit if it's not a digit.
+    # Exit if it's not a digit or if it doesn't match the form "is <number> prime"
     # TODO: We should accept different number formats.
-    return unless /^\d+$/;
+    return unless (/^\d+$/ || ($req->query =~ /^is\s\d+\s(a\s)?prime(\snumber)?$/i));
 
-    my $start_time = time();
-    my @factors = ();
+    # Extract only the number from the remainder
+    $_ =~ s/\D+//;
 
-    # Provide only one second for computing the factors.
-    eval {
-        alarm(1);
-        @factors = factor_exp($_);
-    };
+    my @factors = factor_exp($_);
+
     # Exit if we didn't find anything.
     if(@factors == 0) {
         return;
@@ -128,7 +122,7 @@ handle remainder => sub {
 
         @result = format_answer($plaintext, $answer, $subtitle);
     }
-    
+
     return @result;
 };
 

@@ -9,30 +9,29 @@ triggers any => 'palindrome';
 
 zci is_cached => 1;
 
-primary_example_queries 'is a dank, sad nap. eels sleep and ask nada. a palindrome?';
-secondary_example_queries 'is foo a palindrome?', 'is dad a palindrome?';
-description 'check if a given string is a palindrome';
-name 'Palindrome';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/Palindrome.pm';
-category 'language';
-topics 'words_and_games';
-
 handle query => sub {
-	#Remove the trigger text from the query.
-	return unless /^(?:is\s+|)(.*?)\s+an?\s*palindrome\??$/i;
+    return unless /^(?:is\s+|)(.*?)\s+an?\s*palindrome\??$/i;
+    return if /^(what is*)/;
 
-	my $palindrome = $1;
+    my $palindrome = $1;
+    my $is_palindrome = 0;
 
-	my $is_palindrome = 0;
+    my $clean_palindrome = lc $palindrome;
+    $clean_palindrome =~ s/[^a-z0-9]+//g;
 
-	# Clean up.
-	my $clean_palindrome = lc $palindrome;
-	$clean_palindrome =~ s/[^a-z0-9]+//g;
+    $is_palindrome = 1 if $clean_palindrome eq scalar reverse $clean_palindrome;
 
-	$is_palindrome = 1 if $clean_palindrome eq scalar reverse $clean_palindrome;
-
-	#Check to see if it is a palindrome.
-	return $is_palindrome ? qq("$palindrome" is a palindrome.) : qq("$palindrome" is not a palindrome.);
+    my $title = $is_palindrome ? "Yes" : "No";
+    my $subtitle = "\"$palindrome\" is ".($is_palindrome ? "":"not ")."a palindrome.";
+    return $subtitle, structured_answer => {
+        data => {
+            title => $title,
+            subtitle => $subtitle,
+        },
+        templates => {
+            group => 'text'
+        }
+    }
 };
 
 1;

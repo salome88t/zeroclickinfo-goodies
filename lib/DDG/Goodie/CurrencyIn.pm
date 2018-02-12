@@ -22,20 +22,10 @@ use utf8;
 use DDG::Goodie;
 use Locale::SubCountry;
 use Text::Trim;
-use JSON;
+use JSON::MaybeXS;
 
 zci is_cached => 1;
 zci answer_type => "currency_in";
-
-primary_example_queries 'currency in australia';
-secondary_example_queries 'currency in AU';
-description 'find the official currency of a country';
-name 'CurrencyIn';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/CurrencyIn.pm';
-category 'facts';
-topics 'travel';
-attribution github => ['https://github.com/Alchymista', 'Alchymista'],
-            github => ['https://github.com/ozdemirburak', 'Burak Özdemir'];
 
 triggers any => 'currency', 'currencies';
 
@@ -65,7 +55,7 @@ handle remainder => sub {
 
         $country = $countries->{$country};
         my @currencies = @{$country->{"currencies"}};
-        my $output_country = html_enc($country->{"ucwords"});
+        my $output_country = $country->{"ucwords"};
 
         if (scalar @currencies eq 1) {
             return $currencies[0]{"string"}, structured_answer => {
@@ -81,8 +71,6 @@ handle remainder => sub {
             }
 
             return \%data, structured_answer => {
-                id => "currency_in",
-                name => "CurrencyIn",
                 templates => {
                     group => 'list',
                     options => {

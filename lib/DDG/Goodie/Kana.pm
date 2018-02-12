@@ -13,19 +13,6 @@ use Lingua::JA::Moji qw/
     romaji2kana
     romaji2hiragana/;
 
-name                        'Kana';
-topics                      'special_interest';
-category                    'language';
-attribution                  github => ['http://github.com/hradecek', 'hradecek'];
-description                 'Convert texts writen in kana to romaji;' .
-                            'romaji to katakana or hiragana; '.
-                            'hiragana to katakana or vice versa';
-primary_example_queries     'カひらがなタカナ romaji',
-                            'ahiru katakana',
-                            'ahiru hiragana';
-secondary_example_queries   'ahiru to hiragana',
-                            'ahiru in hiragana';
-
 zci is_cached   => 1;
 zci answer_type => 'kana';
 
@@ -80,6 +67,7 @@ sub to_katakana {
 sub to_romaji {
     my $text = shift @_;
     my $romaji = kana2romaji($text, {style => 'hepburn', wo => 1}) if is_kana(trim_punc($text, $jp_punc));
+    return unless $romaji;
     punc_from_jp($romaji);
 };
 
@@ -97,12 +85,15 @@ handle query_lc => sub {
 
     return unless $answer;
 
-    return "$text converted to $syll is $answer",
-        structured_answer => {
-            input     => [$text],
-            operation => "Convert to ". ucfirst $syll,
-            result    => $answer
-        };
+    return "$text converted to $syll is $answer", structured_answer => {
+        data => {
+            title => $answer,
+            subtitle => "Convert to ". ucfirst $syll. ": $text"
+        },
+        templates => {
+            group => 'text'
+        }
+    };
 };
 
 1;

@@ -9,31 +9,13 @@ use Marpa::R2;
 
 # Regexp triggers are used to find cases where the logical symbol
 # for 'not' is at the beginning of the query (e.g. the case '¬1')
-triggers query_raw => qr/.*\s+(and|or|xor)\s+.*/;
+triggers query_raw => qr/.*\s+(and|or|xor)\s+.*/i;
 triggers query_raw => qr/.*\s*(⊕|∧|∨)\s*.*/;
-triggers query_raw => qr/not\s+.*/;
+triggers query_raw => qr/not\s+.*/i;
 triggers query_raw => qr/¬.*/;
 
 zci is_cached => 1;
 zci answer_type => "binary_logic";
-
-attribution
-    github => ['https://github.com/MithrandirAgain', 'MithrandirAgain'],
-    github => ['https://github.com/bpaschen', 'Bjoern Paschen'],
-    twitter => ['https://twitter.com/Prypjat', 'Bjoern Paschen'],
-    github => ['https://github.com/Sloff', 'Sloff'];
-
-primary_example_queries '4 xor 5', '3 and 2', '1 or 1234';
-secondary_example_queries
-    '9489 xor 394 xor 9349 xor 39 xor 29 xor 4967 xor 3985',
-    '10 and 12',
-    '34 or 100',
-    '10 and (30 or 128)',
-    '0x01 or not 0X100';
-description 'take two numbers and do bitwise logical operations (exclusive-or, or, and, not) on them';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/BinaryLogic.pm';
-category 'calculations';
-topics 'math';
 
 my $rules = <<'END_OF_GRAMMAR';
 :default ::= action => ::first
@@ -51,15 +33,11 @@ Term ::=
 
 Number ::=
        HexNumber action => hex_number
-     | HexNumberCaps action => hex_number
      | BinaryNumber action => binary_number
-     | BinaryNumberCaps action => binary_number
      | DecimalNumber
 
 HexNumber ~ '0x' HexDigits
-HexNumberCaps ~ '0X' HexDigits
 BinaryNumber ~ '0b' BinaryDigits
-BinaryNumberCaps ~ '0B' BinaryDigits
 HexDigits ~ [0-9A-Fa-f]+
 BinaryDigits ~ [01]+
 DecimalNumber ~ [0-9]+
@@ -98,7 +76,7 @@ sub BinaryLogic_Actions::do_not {
     return ~int($t1);
 }
 
-handle query_raw => sub {
+handle query_lc => sub {
     my $input = $_;
 
     my $testError = $input;
@@ -143,8 +121,6 @@ handle query_raw => sub {
     }
 
     return $text_output, structured_answer => {
-        id => 'binary_logic',
-        name => 'Answer',
         data => {
             title => $text_output,
             subtitle => $subtitle

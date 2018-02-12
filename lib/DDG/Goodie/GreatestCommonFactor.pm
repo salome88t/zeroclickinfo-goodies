@@ -3,19 +3,12 @@ package DDG::Goodie::GreatestCommonFactor;
 
 use strict;
 use DDG::Goodie;
+use Math::BigInt try => 'GMP';
 
 zci answer_type => "greatest_common_factor";
 zci is_cached   => 1;
 
 triggers startend => 'greatest common factor', 'gcf', 'greatest common divisor', 'gcd';
-
-primary_example_queries 'GCF 121 11';
-secondary_example_queries '99 9 greatest common factor';
-description 'returns the greatest common factor of the two entered numbers';
-name 'GreatestCommonFactor';
-topics 'math';
-category 'calculations';
-attribution github => [ 'https://github.com/austinheimark', 'Austin Heimark' ];
 
 handle remainder => sub {
 
@@ -25,28 +18,25 @@ handle remainder => sub {
     # holds at least one number.
 
     my @numbers = grep(/^\d/, split /(?:\s|,)+/);
+    return unless @numbers > 1;
+  
     @numbers = sort { $a <=> $b } @numbers;
-
+        
     my $formatted_numbers = join(', ', @numbers);
     $formatted_numbers =~ s/, ([^,]*)$/ and $1/;
 
-    my $result = shift @numbers;
-    foreach (@numbers) {
-        $result = gcf($result, $_)
+    my $result = Math::BigInt::bgcd(@numbers);
+
+    return "Greatest common factor of $formatted_numbers is $result",
+     structured_answer => {
+	  data => {
+	   title => "$result",
+	   subtitle => "Greatest common factor: $formatted_numbers"
+	 },
+     templates => {
+       group => "text",
     }
-
-    return "Greatest common factor of $formatted_numbers is $result.",
-      structured_answer => {
-        input     => [$formatted_numbers],
-        operation => 'Greatest common factor',
-        result    => $result
-      };
+  };
 };
-
-sub gcf {
-    my ($x, $y) = @_;
-    ($x, $y) = ($y, $x % $y) while $y;
-    return $x;
-}
 
 1;

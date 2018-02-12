@@ -3,7 +3,7 @@ package DDG::Goodie::GUID;
 
 use strict;
 use DDG::Goodie;
-use Data::GUID;
+use UUID::Tiny ':std';
 use Text::Trim;
 
 my %guid = (
@@ -15,24 +15,12 @@ my %guid = (
 );
 
 # additional allowed triggers
-my $allowedTriggers = qr/new|random|generate/i;
+my $allowedTriggers = qr/new|random|generate|generator/i;
 
 triggers any => keys %guid;
 
 zci answer_type => "guid";
 zci is_cached   => 0;
-
-primary_example_queries 'guid';
-secondary_example_queries 'uuid';
-description 'generate a unique indentifier';
-name 'GUID';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/GUID.pm';
-category 'computing_tools';
-topics 'programming';
-attribution twitter => ['crazedpsyc','crazedpsyc'],
-            cpan    => ['CRZEDPSYC','crazedpsyc'],
-            github  => 'loganom';
-
 
 handle remainder => sub {
 
@@ -40,15 +28,19 @@ handle remainder => sub {
 
     return if trim $_; # return if other words remaining
 
-    my $guid = Data::GUID->new; # generate new GUID
+    my $guid = create_uuid_as_string(UUID_V4); # generate new version 4 UUID
 
     return unless $guid; # return if GUID doesn't exist
 
-    return $guid->as_string,
+    return $guid,
       structured_answer => {
-        input     => [],
-        operation => 'Random GUID',
-        result    => $guid->as_string
+          data => {
+            title => $guid,
+            subtitle => 'Random GUID',
+          },
+          templates => {
+            group => 'text',
+          },
       };
 };
 

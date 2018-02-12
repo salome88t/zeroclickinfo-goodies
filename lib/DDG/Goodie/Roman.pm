@@ -5,44 +5,82 @@ use strict;
 use DDG::Goodie;
 
 use Roman;
+use List::Util qw/any/;
 use utf8;
 
-primary_example_queries 'roman numeral MCCCXXXVII';
-secondary_example_queries 'roman 1337', 'roman IV';
-description 'convert between Roman and Arabic numerals';
-name 'Roman Numerals';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/Roman.pm';
-category 'conversions';
-topics 'cryptography';
-
-attribution github => ['mrshu', 'Marek Šuppa'];
-
-triggers any => "roman", "arabic";
+triggers startend => "roman", "roman numeral", "roman numerals", "roman number", 
+                     "arabic", "arabic numeral", "arabic numerals", "arabic number";
 
 zci is_cached => 1;
 zci answer_type => "roman_numeral_conversion";
 
-handle remainder => sub {
-    my $in = uc shift;
-    $in =~ s/\s*(?:numeral|number)\s*//i;
+# These two lists are used to load the converter without any answer.
+my @roman_to_arabic = (
+    qr/^convert\s+(?:into|to)\s+arabic\s*(numerals?)?$/i
+);
+my @arabic_to_roman = (
+    qr/^convert\s+(?:into|to)\s+roman\s*(numerals?)?$/i
+);
+ 
+# These two lists are used to load the converter with an answer. 
+my @roman_number_to_arabic = (
+    qr/^convert\s+(\D+)\s+(?:into|in|to)\s*arabic\s*(numerals?)?$/i,
+    qr/^roman\s+(?:numerals?)?\s*(\D+)$/i,
+    qr/^arabic\s+(?:numerals?)?\s*(\D+)$/i,
+    qr/^([ivxlcdm]+)\s+(?:into|in|to)?\s+arabic\s*(numerals?)?$/i
+);    
+my @arabic_number_to_roman = (
+    qr/^convert\s+(\d+)\s+(?:into|in|to)\s*roman\s*(numerals?)?$/i,
+    qr/^roman\s+(?:numerals?)?\s*(\d+)$/i,
+    qr/^arabic\s+(?:numerals?)?\s*(\d+)$/i,
+    qr/^(\d+)\s+(?:into|in|to)?\s+roman\s*(numerals?)?$/i
+);
 
-    return unless $in;
+handle query => sub {
+    my ($query) = @_;
 
-    my $out;
-    if ($in =~ /^\d+$/) {
-        $out = uc(roman($in));
-    } elsif ($in =~ /^[mdclxvi]+$/i) {
-        $in  = uc($in);
-        $out = arabic($in);
+    # By default, we convert from roman to arabic.
+    my $input = 'roman';
+    my $input_value = '';
+    my $output = 'arabic';
+    my $output_value = '';
+    
+    if (any { $query =~ $_ } @arabic_to_roman) {
+        $input = 'arabic';
+        $output = 'roman';
+    } elsif (any { ($input_value) = $query =~ $_ } @roman_number_to_arabic) {
+        if (isroman $input_value) {
+            $input_value = uc $input_value;
+            $output_value = arabic $input_value;
+        } else {
+            # Malformed input (not a roman number), we don't trigger the ia.
+            return;
+        }
+    } elsif (any { ($input_value) = $query =~ $_ } @arabic_number_to_roman) {
+        $input = 'arabic';
+        $output = 'roman';
+        $input_value = $input_value;
+        $output_value = Roman $input_value;
+    } else {
+        $input_value = ''; # because of previous assignments with undef.
+        return unless any { $query =~ $_ } @roman_to_arabic;
     }
-    return unless $out;
 
-    return $out . ' (roman numeral conversion)',
-      structured_answer => {
-        input     => [$in],
-        operation => 'Roman numeral conversion',
-        result    => $out
-      };
+    return 'roman numeral converter', structured_answer => {
+        data => {
+            subtitle => 'Accepts inputs from 1 - 3999, I - MMMCMXCIX',
+            input => $input,
+            input_value => $input_value,
+            output => $output,
+            output_value => $output_value
+        },
+        templates => {
+            group => 'text',
+            options => {
+                title_content => 'DDH.roman.content',
+            }
+        }    
+    };
 };
 
 1;

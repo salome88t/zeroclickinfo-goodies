@@ -14,15 +14,6 @@ triggers startend =>    'donor compatibility', 'donor', 'donors for',
 zci answer_type => "blood_donor";
 zci is_cached   => 1;
 
-primary_example_queries 'donor O+';
-secondary_example_queries 'donor AB+';
-description 'Donor types for a given blood type';
-name 'BloodDonor';
-code_url 'https://github.com/duckduckgo/zeroclickinfo-goodies/blob/master/lib/DDG/Goodie/BloodDonor.pm';
-category 'special';
-topics 'everyday';
-attribution github => ['https://github.com/faraday', 'faraday'];
-
 my %typeMap = (
     'A' => 'A,O',
     'O' => 'O',
@@ -75,8 +66,6 @@ handle remainder => sub {
     }
 
     return to_text(\%record_data, \@record_keys), structured_answer => {
-            id => 'blood_donor',
-            name => 'Blood Donors',
             description => 'Returns available donors for a blood type',
             meta => {
                 sourceName => 'Wikipedia',
